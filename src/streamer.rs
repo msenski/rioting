@@ -14,16 +14,19 @@ use url::Url;
 pub struct Streamer {
     rtsp_url: Url,
     user: String,
-    password: String
+    password: String,
 }
 
 impl Streamer {
-
-        pub fn new(rtsp_url: Url, user: String, password: String) -> Self {
-                    Streamer { rtsp_url, user, password}
+    pub fn new(rtsp_url: Url, user: String, password: String) -> Self {
+        Streamer {
+            rtsp_url,
+            user,
+            password,
         }
+    }
 
-        pub async fn stream(&self, tx: &mpsc::Sender<VideoFrame>) -> anyhow::Result<()> {
+    pub async fn stream(&self, tx: &mpsc::Sender<VideoFrame>) -> anyhow::Result<()> {
         let creds = Credentials {
             username: self.user.clone(),
             password: self.password.clone(),
@@ -72,5 +75,4 @@ impl Streamer {
         }
         Ok(())
     }
-
 }

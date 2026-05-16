@@ -10,6 +10,15 @@ pub enum Vendor {
     Reolink,
 }
 
+impl Vendor {
+    pub fn default_onvif_port(&self) -> u16 {
+        match self {
+            Vendor::Tapo => 2020,
+            Vendor::Reolink => 8000,
+        }
+    }
+}
+
 #[derive(Clone, Deserialize)]
 pub struct CameraConfig {
     pub vendor: Vendor,
@@ -17,6 +26,14 @@ pub struct CameraConfig {
     pub ip: String,
     pub user: String,
     pub password: String,
+    onvif_port: Option<u16>,
+}
+
+impl CameraConfig {
+    pub fn onvif_port(&self) -> u16 {
+        self.onvif_port
+            .unwrap_or_else(|| self.vendor.default_onvif_port())
+    }
 }
 
 #[derive(Clone, Deserialize)]

@@ -1,12 +1,11 @@
 use crate::camera::Camera;
 use crate::config::CameraConfig;
-use url::Url;
 use async_trait::async_trait;
-
+use url::Url;
 
 pub struct ReolinkCamera {
     camera_config: CameraConfig,
-    rtsp_url: Url
+    rtsp_url: Url,
 }
 
 impl ReolinkCamera {
@@ -16,25 +15,24 @@ impl ReolinkCamera {
             "rtsp://{}:554/h264Preview_01_main",
             camera_config.ip,
         ))?;
-        Ok(ReolinkCamera { camera_config, rtsp_url })
+        Ok(ReolinkCamera {
+            camera_config,
+            rtsp_url,
+        })
     }
-
 }
 
 #[async_trait]
 impl Camera for ReolinkCamera {
-
     fn rtsp_url(&self) -> &Url {
         &self.rtsp_url
     }
 
-    async fn ptz_move(&self, pan: f32, tilt: f32) -> anyhow::Result<()>{
+    async fn ptz_move(&self, pan: f32, tilt: f32) -> anyhow::Result<()> {
         todo!()
     }
 
-    
-    async fn ptz_stop(&self) -> anyhow::Result<()>{
+    async fn ptz_stop(&self) -> anyhow::Result<()> {
         todo!()
     }
-
 }
