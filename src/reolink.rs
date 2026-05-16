@@ -4,26 +4,25 @@ use url::Url;
 use async_trait::async_trait;
 
 
-
-pub struct TapoCamera {
+pub struct ReolinkCamera {
     camera_config: CameraConfig,
     rtsp_url: Url
 }
 
-impl TapoCamera {
+impl ReolinkCamera {
     pub fn new(camera_config: CameraConfig) -> anyhow::Result<Self> {
         // TODO support different quality stream paths
         let rtsp_url = Url::parse(&format!(
-            "rtsp://{}:554/stream1",
+            "rtsp://{}:554/h264Preview_01_main",
             camera_config.ip,
         ))?;
-        Ok(TapoCamera { camera_config, rtsp_url })
+        Ok(ReolinkCamera { camera_config, rtsp_url })
     }
 
 }
 
 #[async_trait]
-impl Camera for TapoCamera {
+impl Camera for ReolinkCamera {
 
     fn rtsp_url(&self) -> &Url {
         &self.rtsp_url
@@ -39,4 +38,3 @@ impl Camera for TapoCamera {
     }
 
 }
-

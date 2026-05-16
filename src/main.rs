@@ -2,7 +2,9 @@ mod camera;
 mod config;
 mod hls;
 mod server;
+mod streamer;
 mod tapo;
+mod reolink;
 
 use retina::codec::VideoFrame;
 use tokio::sync::mpsc;
@@ -14,7 +16,12 @@ use clap::Parser;
 
 use config::Config;
 use hls::FFMpegWriter;
-use tapo::Camera;
+
+use crate::config::Vendor;
+use crate::reolink::ReolinkCamera;
+use crate::tapo::TapoCamera;
+use crate::camera::Camera;
+use crate::streamer::Streamer;
 
 const HLS_BASE_PATH: &str = "hls";
 
@@ -35,11 +42,15 @@ async fn main() -> anyhow::Result<()> {
     for cam_cfg in config.cameras.iter() {
         let (tx, mut rx) = mpsc::channel::<VideoFrame>(100);
 
-        let camera = Camera::new(cam_cfg.clone())?;
+        let camera: Box<dyn Camera> = match cam_cfg.vendor {
+            Vendor::Tapo => Box::new(TapoCamera::new(cam_cfg.clone())?),
+            Vendor::Reolink => Box::new(ReolinkCamera::new(cam_cfg.clone())?)
+        };
+        let streamer = Streamer::new(camera.rtsp_url().clone(), cam_cfg.user.clone(), cam_cfg.password.clone());
 
         task_set.spawn(async move {
             loop {
-                match camera.stream(&tx).await {
+                match streamer.stream(&tx).await {
                     Ok(()) => break, // stream ended
                     Err(e) => {
                         eprintln!("{e}");

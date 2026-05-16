@@ -1,8 +1,8 @@
-// use async_trait::async_trait;
+use async_trait::async_trait;
 
 use url::Url;
 
-// #[async_trait]
+#[async_trait]
 pub trait Camera {
     /// Returns the RTSP URL used to connect to this camera's video stream.
     fn rtsp_url(&self) -> &Url;
