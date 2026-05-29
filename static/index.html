@@ -1,25 +1,134 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { margin: 0; background: black; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(640px, 100%), 1fr)); }
-    video { width: 100%; height: 100%; aspect-ratio: 16/9; object-fit: contain; display: block; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(640px, 100%), 1fr));
+      align-items: start;
+    }
+    .camera {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px;
+    }
+    .camera-name {
+      font-size: 0.85rem;
+      color: #888;
+      padding: 4px 0 6px;
+      align-self: flex-start;
+    }
+    video {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: contain;
+      background: black;
+      display: block;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 4px;
+      margin: 12px 0 4px;
+    }
+    .dpad button {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      touch-action: none;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dpad button:active { background: #4a4a4a; }
+    .dpad .placeholder { visibility: hidden; pointer-events: none; }
   </style>
 </head>
 <body>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
+    const SPEED = 0.5;
+
+    function post(url, body) {
+      fetch(url, {
+        method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    }
+
+    function makeDpad(cameraName) {
+      // 3x3 grid — only 4 cells are active directional buttons
+      const cells = [
+        null,
+        { pan: 0,      tilt: SPEED,  label: '▲' },
+        null,
+        { pan: -SPEED, tilt: 0,      label: '◄' },
+        null,
+        { pan: SPEED,  tilt: 0,      label: '►' },
+        null,
+        { pan: 0,      tilt: -SPEED, label: '▼' },
+        null,
+      ];
+
+      const dpad = document.createElement('div');
+      dpad.className = 'dpad';
+
+      for (const cell of cells) {
+        const btn = document.createElement('button');
+        if (!cell) {
+          btn.className = 'placeholder';
+        } else {
+          btn.textContent = cell.label;
+          btn.addEventListener('pointerdown', e => {
+            btn.setPointerCapture(e.pointerId);
+            post(`/cameras/${cameraName}/ptz/move`, { pan: cell.pan, tilt: cell.tilt });
+          });
+          const stop = () => post(`/cameras/${cameraName}/ptz/stop`);
+          btn.addEventListener('pointerup', stop);
+          btn.addEventListener('pointercancel', stop);
+        }
+        dpad.appendChild(btn);
+      }
+
+      return dpad;
+    }
+
     fetch('/cameras')
       .then(r => r.json())
       .then(cameras => {
         cameras.forEach(name => {
+          const wrap = document.createElement('div');
+          wrap.className = 'camera';
+
+          const label = document.createElement('div');
+          label.className = 'camera-name';
+          label.textContent = name;
+
           const video = document.createElement('video');
           video.controls = true;
           video.autoplay = true;
           video.muted = true;
           video.playsInline = true;
-          document.body.appendChild(video);
+
+          wrap.appendChild(label);
+          wrap.appendChild(video);
+          wrap.appendChild(makeDpad(name));
+          document.body.appendChild(wrap);
+
           const hls = new Hls();
           hls.loadSource(`/hls/${name}/output.m3u8`);
           hls.attachMedia(video);
