@@ -10,6 +10,22 @@ pub enum Vendor {
     Reolink,
 }
 
+impl Vendor {
+    pub fn default_onvif_port(&self) -> u16 {
+        match self {
+            Vendor::Tapo => 2020,
+            Vendor::Reolink => 8000,
+        }
+    }
+
+    pub fn rtsp_path(&self) -> &str {
+        match self {
+            Vendor::Tapo => "stream1",
+            Vendor::Reolink => "h264Preview_01_main",
+        }
+    }
+}
+
 #[derive(Clone, Deserialize)]
 pub struct CameraConfig {
     pub vendor: Vendor,
@@ -17,6 +33,14 @@ pub struct CameraConfig {
     pub ip: String,
     pub user: String,
     pub password: String,
+    onvif_port: Option<u16>,
+}
+
+impl CameraConfig {
+    pub fn onvif_port(&self) -> u16 {
+        self.onvif_port
+            .unwrap_or_else(|| self.vendor.default_onvif_port())
+    }
 }
 
 #[derive(Clone, Deserialize)]
@@ -82,7 +106,7 @@ mod tests {
         assert_eq!(config.cameras.len(), 2);
     }
 
-        #[test]
+    #[test]
     fn rejects_unknown_vendor() {
         let toml = r#"                                                                                         
           server_port = "3000"
@@ -100,7 +124,6 @@ mod tests {
           password = "secret"
       "#;
         assert!(toml::from_str::<Config>(toml).is_err());
-
     }
 
     #[test]
