@@ -7,7 +7,7 @@ Wants=network-online.target
 User=ubuntu
 WorkingDirectory=/home/ubuntu
 ExecStart=/usr/local/bin/rioting -c /home/ubuntu/config.toml
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]

@@ -32,8 +32,7 @@ impl FFMpegWriter {
             .args(["-hls_segment_filename", &segment_path]) // zero-padded segment names (output001.ts instead of output1.ts)
             .args([&playlist_path]) // Write the playlist here
             .stdin(Stdio::piped()) // Create a pipe to the stdin
-            .spawn()
-            .expect("Failed to spawn child process for ffmpeg");
+            .spawn()?;
 
         // Create a handle to the child's stdin
         let mut ffmpeg_stdin = ffmpeg_child

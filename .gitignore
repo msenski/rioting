@@ -6,3 +6,4 @@ config.toml
 *.m3u8
 .env
 .claude
+Makefile

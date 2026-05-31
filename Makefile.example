@@ -1,0 +1,23 @@
+TARGET  := aarch64-unknown-linux-gnu
+BINARY  := target/$(TARGET)/release/rioting
+PI_HOST ?= <your-user>@<host-name-or-ip>
+PI_BIN  := /usr/local/bin/rioting
+
+CARGO := $(if $(shell which cross 2>/dev/null),cross,cargo)
+
+.PHONY: build deploy deploy-service restart
+
+build:
+	$(CARGO) build --release --target $(TARGET)
+
+deploy: build
+	scp $(BINARY) $(PI_HOST):/tmp/rioting
+	rsync -av --delete static/ $(PI_HOST):~/static/
+	ssh $(PI_HOST) "sudo systemctl stop rioting && sudo mv /tmp/rioting $(PI_BIN) && sudo systemctl start rioting"
+
+deploy-service:
+	scp deploy/rioting.service $(PI_HOST):/tmp/rioting.service
+	ssh $(PI_HOST) "sudo mv /tmp/rioting.service /etc/systemd/system/rioting.service && sudo systemctl daemon-reload"
+
+restart:
+	ssh $(PI_HOST) "sudo systemctl restart rioting"
