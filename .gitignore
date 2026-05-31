@@ -5,4 +5,4 @@ config.toml
 *.ts
 *.m3u8
 .env
-.claude.hello
+.claude
