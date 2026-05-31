@@ -53,14 +53,11 @@ async fn main() -> anyhow::Result<()> {
         task_set.spawn(async move {
             loop {
                 match streamer.stream(&tx).await {
-                    Ok(()) => break, // stream ended
-                    Err(e) => {
-                        eprintln!("{e}");
-                        tokio::time::sleep(Duration::from_secs(2)).await;
-                    }
+                    Ok(()) => eprintln!("stream ended, reconnecting..."),
+                    Err(e) => eprintln!("{e}"),
                 }
+                tokio::time::sleep(Duration::from_secs(2)).await;
             }
-            Ok(())
         });
 
         let ffmpeg = FFMpegWriter {
@@ -72,8 +69,8 @@ async fn main() -> anyhow::Result<()> {
     let cameras = Arc::new(cameras);
     task_set.spawn(async move { server::serve(&config, cameras).await });
 
-    if let Some(result) = task_set.join_next().await {
-        result??
-    };
+    while let Some(result) = task_set.join_next().await {
+        result??;
+    }
     Ok(())
 }
