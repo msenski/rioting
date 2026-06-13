@@ -4,9 +4,10 @@ mod hls;
 mod onvif;
 mod server;
 mod streamer;
+mod webrtc;
 
 use retina::codec::VideoFrame;
-use tokio::sync::mpsc;
+use tokio::sync::broadcast;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -39,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Setup stream and dedicated ffmpg conversion process for each camera
     for cam_cfg in config.cameras.iter() {
-        let (tx, mut rx) = mpsc::channel::<VideoFrame>(100);
+        let (tx, mut rx1) = broadcast::channel::<Arc<VideoFrame>>(100);
 
         let camera = Arc::new(OnvifCamera::connect(cam_cfg.clone()).await?);
         cameras.insert(cam_cfg.name.clone(), camera.clone());
@@ -63,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
         let ffmpeg = FFMpegWriter {
             hls_output_dir: PathBuf::new().join(HLS_BASE_PATH).join(&cam_cfg.name),
         };
-        task_set.spawn(async move { ffmpeg.write_hls(&mut rx).await });
+        task_set.spawn(async move { ffmpeg.write_hls(&mut rx1).await });
     }
 
     let cameras = Arc::new(cameras);

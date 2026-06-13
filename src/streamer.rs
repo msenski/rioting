@@ -8,8 +8,9 @@ use retina::client::SetupOptions;
 use retina::codec::CodecItem;
 use retina::codec::FrameFormat;
 use retina::codec::VideoFrame;
-use tokio::sync::mpsc;
+use tokio::sync::broadcast::Sender;
 use url::Url;
+use std::sync::Arc;
 
 pub struct Streamer {
     rtsp_url: Url,
@@ -26,7 +27,7 @@ impl Streamer {
         }
     }
 
-    pub async fn stream(&self, tx: &mpsc::Sender<VideoFrame>) -> anyhow::Result<()> {
+    pub async fn stream(&self, tx: &Sender<Arc<VideoFrame>>) -> anyhow::Result<()> {
         let creds = Credentials {
             username: self.user.clone(),
             password: self.password.clone(),
@@ -65,7 +66,7 @@ impl Streamer {
 
         while let Some(res) = playing_session.next().await {
             match res {
-                Ok(CodecItem::VideoFrame(f)) => match tx.try_send(f) {
+                Ok(CodecItem::VideoFrame(f)) => match tx.send(Arc::new(f)) {
                     Ok(_) => {}
                     Err(_) => Err(anyhow!("FFMPEG's buffer is full. Dropping frame..."))?,
                 },

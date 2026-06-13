@@ -3,14 +3,15 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
-use tokio::sync::mpsc;
+use tokio::sync::broadcast::Receiver;
+use std::sync::Arc;
 
 pub struct FFMpegWriter {
     pub hls_output_dir: PathBuf,
 }
 
 impl FFMpegWriter {
-    pub async fn write_hls(&self, rx: &mut mpsc::Receiver<VideoFrame>) -> anyhow::Result<()> {
+    pub async fn write_hls(&self, rx: &mut Receiver<Arc<VideoFrame>>) -> anyhow::Result<()> {
         // Create ouput directory for HLS
         std::fs::create_dir_all(&self.hls_output_dir)?;
 
@@ -40,7 +41,8 @@ impl FFMpegWriter {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Failed to get ffmpeg stdin"))?;
 
-        while let Some(frame) = rx.recv().await {
+        while let res = rx.recv().await {
+            let frame = res.un
             // When you call write_all(bytes), those bytes don't go directly to ffmpeg. They go into a buffer — a small
             // chunk of memory sitting inside your Rust process. Think of it like a holding tank:
             //   function                     OS / ffmpeg
