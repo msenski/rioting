@@ -8,9 +8,9 @@ use retina::client::SetupOptions;
 use retina::codec::CodecItem;
 use retina::codec::FrameFormat;
 use retina::codec::VideoFrame;
+use std::sync::Arc;
 use tokio::sync::broadcast::Sender;
 use url::Url;
-use std::sync::Arc;
 
 pub struct Streamer {
     rtsp_url: Url,

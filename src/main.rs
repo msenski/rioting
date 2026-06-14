@@ -7,7 +7,7 @@ mod streamer;
 mod webrtc;
 
 use retina::codec::VideoFrame;
-use tokio::sync::broadcast;
+use tokio::sync::broadcast::{self, Sender};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -38,12 +38,15 @@ async fn main() -> anyhow::Result<()> {
 
     let mut cameras: HashMap<String, Arc<OnvifCamera>> = HashMap::new();
 
+    let mut camera_channels: HashMap<String, Sender<Arc<VideoFrame>>> = HashMap::new();
+
     // Setup stream and dedicated ffmpg conversion process for each camera
     for cam_cfg in config.cameras.iter() {
         let (tx, mut rx1) = broadcast::channel::<Arc<VideoFrame>>(100);
 
         let camera = Arc::new(OnvifCamera::connect(cam_cfg.clone()).await?);
         cameras.insert(cam_cfg.name.clone(), camera.clone());
+        camera_channels.insert(cam_cfg.name.clone(), tx.clone());
 
         let streamer = Streamer::new(
             camera.rtsp_url().clone(),
@@ -68,7 +71,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let cameras = Arc::new(cameras);
-    task_set.spawn(async move { server::serve(&config, cameras).await });
+    let camera_channels = Arc::new(camera_channels);
+    task_set.spawn(async move { server::serve(&config, cameras, camera_channels).await });
 
     while let Some(result) = task_set.join_next().await {
         result??;

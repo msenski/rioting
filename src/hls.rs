@@ -1,10 +1,10 @@
 use retina::codec::VideoFrame;
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tokio::sync::broadcast::Receiver;
-use std::sync::Arc;
 
 pub struct FFMpegWriter {
     pub hls_output_dir: PathBuf,
@@ -41,8 +41,8 @@ impl FFMpegWriter {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Failed to get ffmpeg stdin"))?;
 
-        while let res = rx.recv().await {
-            let frame = res.un
+        loop {
+            let frame = rx.recv().await.unwrap();
             // When you call write_all(bytes), those bytes don't go directly to ffmpeg. They go into a buffer — a small
             // chunk of memory sitting inside your Rust process. Think of it like a holding tank:
             //   function                     OS / ffmpeg
